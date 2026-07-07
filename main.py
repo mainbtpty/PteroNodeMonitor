@@ -6,7 +6,7 @@ import aiohttp
 from flask import Flask
 from threading import Thread
 
-# 1. Background Web Server for Render Keep-Alive tracking pings
+# 1. Background Web Server required for Render Free Tier tracking pings
 app = Flask('')
 
 @app.route('/')
@@ -53,7 +53,8 @@ async def control_pterodactyl_server(signal):
     async with aiohttp.ClientSession() as session:
         try:
             async with session.post(endpoint, json=payload, headers=headers) as response:
-                if response.status in:
+                # FIXED: Corrected status code check
+                if response.status in [200, 204]:
                     return True
                 print(f"❌ Ptero API returned error status code: {response.status}")
                 return False
