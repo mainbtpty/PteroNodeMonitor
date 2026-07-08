@@ -53,8 +53,9 @@ async def control_pterodactyl_server(signal):
     async with aiohttp.ClientSession() as session:
         try:
             async with session.post(endpoint, json=payload, headers=headers) as response:
-                # SUCCESS CODES FIXED: Explicitly checking for HTTP 200, 201, or 204 success states
-                if response.status in:
+                # FIXED: Removed the broken 'in' statement entirely.
+                # Standard successful Pterodactyl power actions return HTTP 204 (No Content).
+                if response.status == 204 or response.status == 200:
                     return True
                 print(f"❌ Ptero API returned error status code: {response.status}")
                 return False
