@@ -19,13 +19,11 @@ def keep_alive():
     t = Thread(target=run_web_server)
     t.start()
 
-# 2. Discord Bot Core Engine Configuration with Explicit Privileged Intents
+# 2. Discord Bot Core Engine Configuration
 class PteroMonitorBot(commands.Bot):
     def __init__(self):
-        # FIXED: Explicitly requesting the portal switches you enabled
+        # Using basic intents to guarantee connection stability during screenshot tests
         intents = discord.Intents.default()
-        intents.members = True
-        intents.message_content = True
         super().__init__(command_prefix="!", intents=intents)
 
     async def setup_hook(self):
@@ -70,14 +68,16 @@ async def manual_restart(interaction: discord.Interaction):
         description="The remote server node has been commanded to restart immediately via API client endpoint mapping.",
         color=discord.Color.green()
     )
-    await interaction.followup.send(done_embed, ephemeral=True)
+    await interaction.followup.send(embed=done_embed, ephemeral=True)
 
 @bot.event
 async def on_ready():
-    print(f"🤖 Connected as: {bot.user.name}")
+    print(f"🤖 Connected successfully as: {bot.user.name}")
 
 if __name__ == "__main__":
     keep_alive()
     token = os.getenv("DISCORD_TOKEN")
     if token:
         bot.run(token)
+    else:
+        print("❌ System Error: DISCORD_TOKEN is missing from variables.")
