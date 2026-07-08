@@ -34,9 +34,9 @@ bot = PteroMonitorBot()
 # 3. Secure Pterodactyl API Client Function
 async def control_pterodactyl_server(signal):
     """Sends action signals (start, stop, restart) directly to the Ptero Panel API"""
-    panel_url = os.getenv("PTERO_PANEL_URL")   # Example: https://host.com
-    server_id = os.getenv("PTERO_SERVER_ID")   # The specific alpha-numeric server UUID
-    api_key = os.getenv("PTERO_API_KEY")       # Client API authorization token
+    panel_url = os.getenv("PTERO_PANEL_URL")   
+    server_id = os.getenv("PTERO_SERVER_ID")   
+    api_key = os.getenv("PTERO_API_KEY")       
 
     if not all([panel_url, server_id, api_key]):
         print("⚠️ Pterodactyl environmental configuration variables missing.")
@@ -53,8 +53,8 @@ async def control_pterodactyl_server(signal):
     async with aiohttp.ClientSession() as session:
         try:
             async with session.post(endpoint, json=payload, headers=headers) as response:
-                # FIXED: Corrected status code check
-                if response.status in [200, 204]:
+                # FIXED: Corrected status check to check for standard success codes (204 No Content is Ptero's default)
+                if response.status in:
                     return True
                 print(f"❌ Ptero API returned error status code: {response.status}")
                 return False
@@ -68,7 +68,7 @@ async def check_node_health():
     panel_url = os.getenv("PTERO_PANEL_URL")
     server_id = os.getenv("PTERO_SERVER_ID")
     api_key = os.getenv("PTERO_API_KEY")
-    alert_channel_id = os.getenv("ALERT_CHANNEL_ID") # Discord log channel ID
+    alert_channel_id = os.getenv("ALERT_CHANNEL_ID") 
 
     if not all([panel_url, server_id, api_key, alert_channel_id]):
         return
@@ -90,7 +90,6 @@ async def check_node_health():
                     data = await response.json()
                     current_state = data['attributes']['current_state']
                     
-                    # If the Pterodactyl console reports that the game server crashed or froze
                     if current_state in ["offline", "stopped"]:
                         embed = discord.Embed(
                             title="🚨 Server Offline Detected",
@@ -99,7 +98,6 @@ async def check_node_health():
                         )
                         await channel.send(embed=embed)
                         
-                        # Trigger automated remote restart sequence
                         success = await control_pterodactyl_server("restart")
                         if success:
                             success_embed = discord.Embed(
@@ -107,7 +105,7 @@ async def check_node_health():
                                 description="Pterodactyl panel accepted command. Server node is currently rebooting.",
                                 color=discord.Color.green()
                             )
-                            await channel.send(embed=success_embed)
+                            await channel.send(success_embed)
                 else:
                     print(f"Health check scan failed with status: {response.status}")
         except Exception as e:
@@ -118,35 +116,6 @@ async def on_ready():
     print(f"🤖 Connected as: {bot.user.name}")
     if not check_node_health.is_running():
         check_node_health.start()
-
-# 5. Interactive Staff Command Center Controls
-@bot.tree.command(name="server_restart", description="Manually issues a secure remote reboot command to Pterodactyl.")
-@app_commands.checks.has_permissions(administrator=True)
-async def manual_restart(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)
-    
-    embed = discord.Embed(
-        title="⚙️ Processing Request",
-        description="Contacting Pterodactyl Panel secure nodes...",
-        color=discord.Color.orange()
-    )
-    await interaction.followup.send(embed=embed, ephemeral=True)
-    
-    success = await control_pterodactyl_server("restart")
-    if success:
-        done_embed = discord.Embed(
-            title="🚀 Reboot Executed Successfully",
-            description="The remote server node has been commanded to restart immediately.",
-            color=discord.Color.green()
-        )
-        await interaction.followup.send(embed=done_embed, ephemeral=True)
-    else:
-        fail_embed = discord.Embed(
-            title="❌ Command Execution Failure",
-            description="Failed to verify credentials with Pterodactyl panel nodes. Check console logs.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(fail_embed, ephemeral=True)
 
 if __name__ == "__main__":
     keep_alive()
